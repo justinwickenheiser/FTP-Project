@@ -3,7 +3,8 @@ import java.net.* ;
 import java.util.* ;
 
 public class ftp_client {
-	
+	private static final int BUFSIZE = 256;   // Size of receive buffer
+    
 	public static void main(String[] args) throws IOException {
 		int controlPort = 2264;
 		int dataPort = 2265;
@@ -11,6 +12,7 @@ public class ftp_client {
 		String cmd = new String("");
 		Scanner console = new Scanner(System.in);
 		boolean timeToQuit = false;
+        byte[] byteBuffer = new byte[BUFSIZE];  // sender buffer
 		
 		if (args.length != 1)  // Test for correct # of args
 			throw new IllegalArgumentException("Parameter(s): <Server>");
@@ -24,15 +26,15 @@ public class ftp_client {
 		OutputStream outToServer_Control = controlConnection.getOutputStream();
 		
 		System.out.print("cmd: ");
-		cmd = console.next();
+		cmd = console.nextLine();
 		
 		// Establish the listen socket.
 		ServerSocket dataListen = new ServerSocket(dataPort);
 		
 		while (!timeToQuit) {
 			
-			outToServer_Control.write(cmd.getBytes());
-			
+            outToServer_Control.write(cmd.getBytes());
+            
 			// Listen for a TCP connection request.
 			Socket dataConnection = dataListen.accept();	// This socket goes with ServerSocket
 			

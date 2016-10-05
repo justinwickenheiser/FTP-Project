@@ -4,6 +4,7 @@ import java.util.* ;
 
 public class ftp_server {
 	private static final int BUFSIZE = 256;   // Size of receive buffer
+    private static final int CMDLENGTH = 4;   // String length of commands
 	
 	public static void main(String argv[]) throws Exception {
 		int controlPort = 2264;
@@ -29,21 +30,26 @@ public class ftp_server {
 			// Receive until client closes connection, indicated by -1 return
 			while ((recvMsgSize = inFromClient_Control.read(byteBuffer)) != -1) {
 				// create cmdReceived
-				String cmdReceived = new String(byteBuffer,0,recvMsgSize);
+				String cmdReceived = new String(byteBuffer,0,CMDLENGTH);
+                String secondArg = new String(byteBuffer,CMDLENGTH,recvMsgSize);
 				
-				
+                /*
+                 *  NOTE: The secondArg does not flush. i.e. 
+                 *      1. stor file_1.txt
+                 *      2. list
+                 *
+                 *      The second arg is still going to be file_1.txt.
+                 *      This is because it is left over from before.
+                 *
+                 */
+                
 				// open dataConnection socket
 				Socket dataConnection = new Socket(controlConnection.getInetAddress(), dataPort);
 				System.out.println("Connected to client...DATA LINE");
 				
 				System.out.println("Message Size: " + recvMsgSize);
-				System.out.println("Received: " + cmdReceived.toLowerCase());
-				
-				/*
-				 * IF STATEMENTS NOT WORKING!!!!
-				 * Sort of. I had to declare cmdReceived using an offset of 4 bytes since
-				 * there are 4 letters each in LIST, RETR, STOR, QUIT
-				 */
+				System.out.println("cmd Received: " + cmdReceived.toLowerCase());
+                System.out.println("Second Arg Received: " + secondArg);
 				
 				// based on cmdReceived do something
 				if (cmdReceived.toLowerCase().equals("list")) {
