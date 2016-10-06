@@ -15,82 +15,121 @@ public class ftp_server {
 		// Establish the listen socket.
 		ServerSocket controlListen = new ServerSocket(controlPort);
 		
-		// Process HTTP service requests in an infinite loop.
-		while (true) {
-			// Listen for a TCP connection request.
-			Socket controlConnection = controlListen.accept();
+		// Listen for a TCP connection request.
+		Socket controlConnection = controlListen.accept();
+		
+		InputStream inFromClient_Control = controlConnection.getInputStream();
+		OutputStream outToClient_Control = controlConnection.getOutputStream();
+		
+		
+		System.out.println("Client connected to Server: CONTROLLER");
+		System.out.println("");
+		
+		// Receive until client closes connection, indicated by -1 return
+		while ((recvMsgSize = inFromClient_Control.read(byteBuffer)) != -1) {
+			// create cmdReceived
+			String cmdReceived = new String(byteBuffer,0,CMDLENGTH);
+            String secondArg = new String(byteBuffer,CMDLENGTH+1,recvMsgSize);
+            
+			// open dataConnection socket
+			Socket dataConnection = new Socket(controlConnection.getInetAddress(), dataPort);
+			System.out.println("Connected to client...DATA LINE");
+
+			InputStream inFromClient_Data = dataConnection.getInputStream();
+			OutputStream outToClient_Data = dataConnection.getOutputStream();
 			
-			InputStream inFromClient_Control = controlConnection.getInputStream();
-			OutputStream outToClient_Control = controlConnection.getOutputStream();
-			
-			
-			System.out.println("Client connected to Server: CONTROLLER");
-			System.out.println("");
-			
-			// Receive until client closes connection, indicated by -1 return
-			while ((recvMsgSize = inFromClient_Control.read(byteBuffer)) != -1) {
-				// create cmdReceived
-				String cmdReceived = new String(byteBuffer,0,CMDLENGTH);
-                String secondArg = new String(byteBuffer,CMDLENGTH,recvMsgSize);
+			// based on cmdReceived do something
+			if (cmdReceived.toLowerCase().equals("list")) {
 				
-                /*
-                 *  NOTE: The secondArg does not flush. i.e. 
-                 *      1. stor file_1.txt
-                 *      2. list
-                 *
-                 *      The second arg is still going to be file_1.txt.
-                 *      This is because it is left over from before.
-                 *
-                 */
-                
-				// open dataConnection socket
-				Socket dataConnection = new Socket(controlConnection.getInetAddress(), dataPort);
-				System.out.println("Connected to client...DATA LINE");
-				
-				System.out.println("Message Size: " + recvMsgSize);
-				System.out.println("cmd Received: " + cmdReceived.toLowerCase());
-                System.out.println("Second Arg Received: " + secondArg);
-				
-				// based on cmdReceived do something
-				if (cmdReceived.toLowerCase().equals("list")) {
-					
-					System.out.println("Running " + cmdReceived);
-					
-				} else if (cmdReceived.toLowerCase().equals("retr")) {
-					
-					System.out.println("Running " + cmdReceived);
-					
-				} else if (cmdReceived.toLowerCase().equals("stor")) {
-					
-					System.out.println("Running " + cmdReceived);
-					
-				} else if (cmdReceived.toLowerCase().equals("quit")) {
-					
-					System.out.println("Running " + cmdReceived);
-					
-					dataConnection.close();
-					System.out.println("Server DATA LINE Closed");
-					
-					controlConnection.close();
-					System.out.println("Server CONTROLLER Closed");
-					
-					System.exit(0);
+				System.out.println("Running " + cmdReceived);
+				File directory = new File(".");
+				File[] listOfFiles = directory.listFiles();
+				String fileName = new String("");
+				// Loop through the number of files and write each one
+				for (int i = 0; i < listOfFiles.length; i++) {
+					// get File name
+					if (listOfFiles[i].isFile()) {
+						fileName = listOfFiles[i].getName();
+					} else if (listOfFiles[i].isDirectory()) {
+						fileName = listOfFiles[i].getName() + "/";
+					}
+
+					// write to client over DATA line
+					outToClient_Data.write( fileName.getBytes() );
 				}
+				
+			} else if (cmdReceived.toLowerCase().equals("retr")) {
+				
+				System.out.println("Running " + cmdReceived);
+				File fileToRetr = new File(secondArg);
+
+				// if File exists write file, otherwise write error message
+				if (fileToRetr.exists()) {
+					try {
+						// declare variables for converting file to byte[]
+						FileInputStream fileInputStream = new FileInputStream(fileToRetr);
+						byte[] fileByteArray = new byte[(int) fileToRetr.length()];
+
+						// convert file
+						fileInputStream.read(fileByteArray);
+						fileInputStream.close();
+
+						// write to client over DATA line
+						outToClient_Data.write( fileByteArray );
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				} else {
+					// write error message to client over DATA line
+					String errMsg = new String("File does not exist.");
+					outToClient_Data.write( errMsg.getBytes() );
+				}
+				
+			} else if (cmdReceived.toLowerCase().equals("stor")) {
+				
+				System.out.println("Running " + cmdReceived);
+
+				while ((recvMsgSize = inFromClient_Data.read(byteBuffer)) != -1) {
+					try {
+						File fileToStore = new File(secondArg);
+						FileOutputStream fileOutputStream = new FileOutputStream(fileToStore);
+						fileOutputStream.write(byteBuffer);
+						fileOutputStream.close();
+
+						String storMsg = new String("Message successfully stored.");
+						outToClient_Data.write( storMsg.getBytes() );
+					} catch (Exception e) {
+						String storMsg = new String("Message failed to store.");
+						outToClient_Data.write( storMsg.getBytes() );
+					}
+				}
+				
+			} else if (cmdReceived.toLowerCase().equals("quit")) {
+				
+				System.out.println("Running " + cmdReceived);
 				
 				dataConnection.close();
 				System.out.println("Server DATA LINE Closed");
-				System.out.println("");
+				
+				controlConnection.close();
+				System.out.println("Server CONTROLLER Closed");
+				
+				System.exit(0);
 			}
 			
-			// Construct an object to process the HTTP request message.
-			//HttpRequest request = new HttpRequest(connection);
-			
-			// Create a new thread to process the request.
-			//Thread thread = new Thread(request);
-			
-			// Start the thread.
-			//thread.start();
+			dataConnection.close();
+			System.out.println("Server DATA LINE Closed");
+			System.out.println("");
 		}
+		
+		// Construct an object to process the HTTP request message.
+		//HttpRequest request = new HttpRequest(connection);
+		
+		// Create a new thread to process the request.
+		//Thread thread = new Thread(request);
+		
+		// Start the thread.
+		//thread.start();
 	}
 }
 

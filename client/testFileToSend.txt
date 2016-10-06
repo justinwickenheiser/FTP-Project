@@ -1,0 +1,3 @@
+This is a file to send.
+
+It is sent to the server, from the client.

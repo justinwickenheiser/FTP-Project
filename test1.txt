@@ -1,0 +1,5 @@
+File to receive.
+
+This file should be sent by the server to the client.
+
+Tests: retr command.
