@@ -95,12 +95,9 @@ public class ftp_server {
 						FileOutputStream fileOutputStream = new FileOutputStream(fileToStore);
 						fileOutputStream.write(byteBuffer);
 						fileOutputStream.close();
-
-						String storMsg = new String("Message successfully stored.");
-						outToClient_Data.write( storMsg.getBytes() );
 					} catch (Exception e) {
 						String storMsg = new String("Message failed to store.");
-						outToClient_Data.write( storMsg.getBytes() );
+						System.out.println(storMsg);
 					}
 				}
 				
