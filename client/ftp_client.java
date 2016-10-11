@@ -86,12 +86,6 @@ public class ftp_client {
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
-                    
-                    /*
-					// wait for server to respond
-					while ((recvMsgSize = inFromServer_Data.read(byteBuffer)) != -1) {
-						System.out.println(new String(byteBuffer,0,recvMsgSize));
-					}*/
 				} else {
 					System.out.println("File does not exist.");
 				}
